@@ -170,13 +170,13 @@ Running the model on the validation dataset produces the following results:
 predict_validation = predict(fit_less, validation)
 
 #Results of the rf on the validation dataset
-predict_validation_table = data.frame(id = 1:20, pred = predict_validation)
+predict_validation_table = data.frame(Prediction = predict_validation)
 
 ```
 
 
-```{r small_model_5, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'as.is'}
-kable(predict_validation_table)
+```{r small_model_5, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'as.is', comment = NA}
+predict_validation_table
 ```
 
 
