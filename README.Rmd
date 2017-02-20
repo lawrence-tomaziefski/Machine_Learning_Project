@@ -1,0 +1,188 @@
+---
+title: Predicting Exercise Type with Random Forest Machine Learning
+author: "Lawrence A. Tomaziefski"
+output:
+  html_document:
+    fig_height: 5
+    fig_width: 5
+    highlight: haddock
+    keep_md: yes
+    theme: united
+  pdf_document: default
+---
+
+
+#####***Executive Summary***
+Personal fitness devices such as, *Fitbit* and *Nike FuelBand*, have become more and more prevelanet everyday fitness activities.  The immense amount of data has given rise to research in Human Activity Recogition.  The fitness devices are very useful in tracking the amount of activity. However, could these devices be used to inform people about the quality of thier activity? 
+
+Vellaso, et al. conducted a study where they asked participants to wear a personal fitness device and conduct a set of excercises in six different manners.  The researchers instructed the participants to conduct the activity correctly, and then asked them to perform the activity using five common mistakes.  Thier report *Qualitative Activity Recognition of Weight Lifting Exercises* and accompanying dataset can be found at, http://groupware.les.inf.puc-rio.br/har.
+
+The purpose of this project is to determine if the manner of how the participants conducted the exercise can be predicted.  In order determine this, a random forest machine learning model was built using 5 variables and 2 fold cross validation.  When the model was applied to a test dataset the *out of sample error rate* between 0% and .001%.  Additionaly the model was able to predict the manner of exercise in a validation dataset with 100% accuracy.  Therefore, it appears promising that exercise quailty can be determined using personal fitness devices.  
+
+#####***Data Processing***
+Note that the dataset that is labeled as test, was used as the validation dataset.  The training dataset is split later in the process into training and test datasets.  Proceeding in this manner allowed for the estimation of out of sample error.
+
+```{r setup, cache= TRUE, echo= TRUE, warning= FALSE, message= FALSE, results= 'hide'}
+#Packages required for processing and analysis:
+require(dplyr)
+require(caret)
+require(mlbench)
+require(parallel)
+require(doParallel)
+
+data_sets = c("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv","https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
+
+download.file(data_sets,destfile = c("training.csv", "testing.csv"),method = "libcurl")
+
+training = read.csv("training.csv", header = TRUE, stringsAsFactors = FALSE)
+validation = read.csv("testing.csv", header = TRUE, stringsAsFactors = FALSE)
+```
+
+#####***Cleaning the Data*** 
+After doing a quick visual inspection and summary of the testing data there appears to be several variables that have nothing but NA values.  Therefore, we want to remove those variables because of the lack of predictive ability.  Removing the variables of class *logical* signficantly reduces the dataset from 160 to 58 variables.  The same data processing steps were applied to the training and validation datasets.  The validation dataset must contain only the variables are used for prediction later in the process and all factor variables need to have the same number of levels in the training and validation datasets.
+
+```{r clean, cache= TRUE, echo= TRUE, warning= FALSE, message= FALSE, results= 'hide'}
+validation_logical = validation %>% select_if(is.logical)
+validation_logical_names = names(validation_logical)
+validation = validation %>% select(-one_of(validation_logical_names),-cvtd_timestamp, -1) %>% select(-58)
+training = training %>% select(-one_of(validation_logical_names),-cvtd_timestamp, -1)
+training$user_name = as.factor(training$user_name)
+training$new_window = as.factor(training$new_window)
+training$classe = as.factor(training$classe)
+validation$user_name = as.factor(validation$user_name)
+validation$new_window = as.factor(validation$new_window)
+levels(validation$user_name ) = levels(training$user_name)
+levels(validation$new_window ) = levels(training$new_window)
+```
+
+#####***Developing Random Forest Model***
+
+Random Forests are excellent for classification problems such as this one, and are fairly straight-forward to implement.  The draw back is sometimes they can be very expenisive computationally, tend to overfit, and hard to interpret.  The following is the strategy implemented to overcome some of these issues.
+
+
+
++ K-fold cross validation with several numbers of folds were testing to determine trade-off between accuracy and speed.
++ Variable importance was explored to determine if the number of variables included in the model could be reduced.
+
+**Building the models**
+```{r model1,cache= FALSE, results= 'hide', echo= TRUE, warning= FALSE, message= FALSE, eval = FALSE}
+#Split the training data set into a training and testing dataset in order to determine out of sample error rate.  
+set.seed(5001)
+in_train = createDataPartition(y = training$classe, p = .75, list = FALSE)
+training = training[in_train, ]
+testing = training[-in_train, ]
+
+x = training[,-58]
+y = as.factor(training[,58])
+
+cluster = makeCluster(detectCores() - 1) #Required for parallel processing
+registerDoParallel(cluster)
+
+fit_control2 = trainControl(method = "cv", number = 2, allowParallel = TRUE)
+fit_control3 = trainControl(method = "cv", number = 3, allowParallel = TRUE)
+fit_control5 = trainControl(method = "cv", number = 5, allowParallel = TRUE) 
+two_fold = train(x, y, method = "rf", trControl = fit_control2, importance = TRUE, na.action = na.omit)
+three_fold = train(x, y, method = "rf", trControl = fit_control3, importance = TRUE, na.action = na.omit) 
+five_fold = train(x, y, method = "rf", trControl = fit_control5, importance = TRUE, na.action = na.omit)
+stopCluster(cluster)
+registerDoSEQ()
+```
+
+The follwing table summarizes the results of the 3 models, note that *Time* is the total processing time in seconds.  
+```{r accuracy, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'hide'}
+require(knitr)
+model = c("2 Fold", "3 Fold", "5 Fold")
+accuracy = c(.9878, .9985, .9989)
+time = c(206.53, 341.80, 609.28)
+variables = c(29, 29, 29)
+output = data.frame(Model = model, Accuracy = accuracy, Time = time, Variables = variables)
+```
+
+```{r accuracy2, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'as.is'}
+kable(output)
+```
+
+Clearly the 2 Fold model is the advantageous because it requires one-third of the processing time, with little sacrifice in accuracy.  The number of variables used in the model, remains a concern.  The following is a list of the twenty of the most important variables to the model.  There appears to be a seperation between the fifth and sixth variables on the list.  The potential exists to reduce the model from fifty seven variables to five without sacrificing accuracy.  
+
+```{r accuracy3, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'hide'}
+set.seed(5001)
+in_train = createDataPartition(y = training$classe, p = .75, list = FALSE)
+training = training[in_train, ]
+testing = training[-in_train, ]
+
+x = training[,-58]
+y = as.factor(training[,58])
+
+cluster = makeCluster(detectCores() - 1) #Required for parallel processing
+registerDoParallel(cluster)
+fit_control2 = trainControl(method = "cv", number = 2, allowParallel = TRUE)
+two_fold = train(x, y, method = "rf", trControl = fit_control2, importance = TRUE, na.action = na.omit)
+var_importance = varImp(two_fold)
+stopCluster(cluster)
+registerDoSEQ()
+```
+
+```{r accuracy4, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'as.is', comment= NA}
+var_importance
+```
+
+A random forest model with two fold cross validation and five variables is trained.
+
+```{r small_model_1, cache= TRUE, echo= TRUE, warning= FALSE, message= FALSE, results= 'hide'}
+training1 = training %>% select(raw_timestamp_part_1, roll_belt, num_window, magnet_dumbbell_z, pitch_forearm, classe)
+testing1 = testing %>% select(raw_timestamp_part_1, roll_belt, num_window, magnet_dumbbell_z, pitch_forearm, classe)
+validation1 = validation %>% select(raw_timestamp_part_1, roll_belt, num_window, magnet_dumbbell_z, pitch_forearm)
+
+x1 = training1[,-6]
+y1 = as.factor(training1[,6])
+
+fit_less = train(x1, y1, method = "rf", trControl = fit_control2, importance = TRUE, na.action = na.omit)
+```
+
+Running the model with a reduced number of variables increased both accuracy and computation speed.  
+
+```{r accuracy5, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'hide'}
+require(knitr)
+model1 = c("2 Fold")
+accuracy1 = c(.999)
+time1 = c(34.39)
+variables1 = c(5)
+output1 = data.frame(Model = model1, Accuracy = accuracy1, Time = time1, Variables = variables1)
+```
+
+
+```{r accuracy6, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'as.is'}
+kable(output1)
+```
+
+Running the model on the test data set results in an accuracy between .999 and 1, therefore the out of sample error rate between 0 and .001. 
+
+```{r small_model_3, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'as.is', comment= NA}
+#Predict on the test data
+predict_fit_less = predict(fit_less, testing1)
+confusionMatrix(predict_fit_less, testing$classe) 
+```
+
+Running the model on the validation dataset produces the following results:
+
+```{r small_model_4, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'hide'}
+#Predict on the validation data
+predict_validation = predict(fit_less, validation)
+
+#Results of the rf on the validation dataset
+predict_validation_table = data.frame(id = 1:20, pred = predict_validation)
+
+```
+
+
+```{r small_model_5, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'as.is'}
+kable(predict_validation_table)
+```
+
+
+#####***Conclusions***
+It appears that exercise quality can be determined using personal fitness devices.  A random forest machine learning model built with 5 variables and using 2 fold cross validation supports this conclusion.  Applying the model to a test dataset yielded an *out of sample error rate* between 0 and .001.  Additionaly the model was able to predict the manner of exercise in a validation dataset with 100% accuracy.  
+
+
+
+
