@@ -98,8 +98,8 @@ variables = c(29, 29, 29)
 output = data.frame(Model = model, Accuracy = accuracy, Time = time, Variables = variables)
 ```
 
-```{r accuracy2, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'as.is'}
-kable(output)
+```{r accuracy2, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'as.is', comment= NA}
+output
 ```
 
 Clearly the 2 Fold model is the advantageous because it requires one-third of the processing time, with little sacrifice in accuracy.  The number of variables used in the model, remains a concern.  The following is a list of the twenty of the most important variables to the model.  There appears to be a seperation between the fifth and sixth variables on the list.  The potential exists to reduce the model from fifty seven variables to five without sacrificing accuracy.  
@@ -151,8 +151,8 @@ output1 = data.frame(Model = model1, Accuracy = accuracy1, Time = time1, Variabl
 ```
 
 
-```{r accuracy6, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'as.is'}
-kable(output1)
+```{r accuracy6, cache= TRUE, echo= FALSE, warning= FALSE, message= FALSE, results= 'as.is', comment = NA}
+output1
 ```
 
 Running the model on the test data set results in an accuracy between .999 and 1, therefore the out of sample error rate between 0 and .001. 

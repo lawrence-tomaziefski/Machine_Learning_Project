@@ -85,11 +85,12 @@ The follwing table summarizes the results of the 3 models, note that *Time* is t
 
 
 
-Model     Accuracy     Time   Variables
--------  ---------  -------  ----------
-2 Fold      0.9973   206.53          29
-3 Fold      0.9985   341.80          29
-5 Fold      0.9989   609.28          29
+```
+   Model Accuracy   Time Variables
+1 2 Fold   0.9878 206.53        29
+2 3 Fold   0.9985 341.80        29
+3 5 Fold   0.9989 609.28        29
+```
 
 Clearly the 2 Fold model is the advantageous because it requires one-third of the processing time, with little sacrifice in accuracy.  The number of variables used in the model, remains a concern.  The following is a list of the twenty of the most important variables to the model.  There appears to be a seperation between the fifth and sixth variables on the list.  The potential exists to reduce the model from fifty seven variables to five without sacrificing accuracy.  
 
@@ -145,9 +146,10 @@ Running the model with a reduced number of variables increased both accuracy and
 
 
 
-Model     Accuracy    Time   Variables
--------  ---------  ------  ----------
-2 Fold       0.999   34.39           5
+```
+   Model Accuracy  Time Variables
+1 2 Fold    0.999 34.39         5
+```
 
 Running the model on the test data set results in an accuracy between .999 and 1, therefore the out of sample error rate between 0 and .001. 
 
