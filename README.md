@@ -2,14 +2,14 @@
 Lawrence A. Tomaziefski  
 
 
-#####***Executive Summary***
+***Executive Summary***
 Personal fitness devices such as, *Fitbit* and *Nike FuelBand*, have become more and more prevelanet everyday fitness activities.  The immense amount of data has given rise to research in Human Activity Recogition.  The fitness devices are very useful in tracking the amount of activity. However, could these devices be used to inform people about the quality of thier activity? 
 
 Vellaso, et al. conducted a study where they asked participants to wear a personal fitness device and conduct a set of excercises in six different manners.  The researchers instructed the participants to conduct the activity correctly, and then asked them to perform the activity using five common mistakes.  Thier report *Qualitative Activity Recognition of Weight Lifting Exercises* and accompanying dataset can be found at, http://groupware.les.inf.puc-rio.br/har.
 
 The purpose of this project is to determine if the manner of how the participants conducted the exercise can be predicted.  In order determine this, a random forest machine learning model was built using 5 variables and 2 fold cross validation.  When the model was applied to a test dataset the *out of sample error rate* between 0% and .001%.  Additionaly the model was able to predict the manner of exercise in a validation dataset with 100% accuracy.  Therefore, it appears promising that exercise quailty can be determined using personal fitness devices.  
 
-#####***Data Processing***
+***Data Processing***
 Note that the dataset that is labeled as test, was used as the validation dataset.  The training dataset is split later in the process into training and test datasets.  Proceeding in this manner allowed for the estimation of out of sample error.
 
 
@@ -29,7 +29,7 @@ training = read.csv("training.csv", header = TRUE, stringsAsFactors = FALSE)
 validation = read.csv("testing.csv", header = TRUE, stringsAsFactors = FALSE)
 ```
 
-#####***Cleaning the Data*** 
+***Cleaning the Data*** 
 After doing a quick visual inspection and summary of the testing data there appears to be several variables that have nothing but NA values.  Therefore, we want to remove those variables because of the lack of predictive ability.  Removing the variables of class *logical* signficantly reduces the dataset from 160 to 58 variables.  The same data processing steps were applied to the training and validation datasets.  The validation dataset must contain only the variables are used for prediction later in the process and all factor variables need to have the same number of levels in the training and validation datasets.
 
 
@@ -47,7 +47,7 @@ levels(validation$user_name ) = levels(training$user_name)
 levels(validation$new_window ) = levels(training$new_window)
 ```
 
-#####***Developing Random Forest Model***
+***Developing Random Forest Model***
 
 Random Forests are excellent for classification problems such as this one, and are fairly straight-forward to implement.  The draw back is sometimes they can be very expenisive computationally, tend to overfit, and hard to interpret.  The following is the strategy implemented to overcome some of these issues.
 
@@ -219,7 +219,7 @@ Running the model on the validation dataset produces the following results:
 ```
 
 
-#####***Conclusions***
+***Conclusions***
 It appears that exercise quality can be determined using personal fitness devices.  A random forest machine learning model built with 5 variables and using 2 fold cross validation supports this conclusion.  Applying the model to a test dataset yielded an *out of sample error rate* between 0 and .001.  Additionaly the model was able to predict the manner of exercise in a validation dataset with 100% accuracy.  
 
 
